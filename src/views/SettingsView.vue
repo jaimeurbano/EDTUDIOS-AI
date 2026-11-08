@@ -1,8 +1,23 @@
 <script setup>
-import { computed, onBeforeUnmount, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
+import { isSupabaseConfigured } from '../lib/supabase'
 import { assistant, clearChat, setSocratic } from '../stores/useAssistant'
+import {
+  accountName,
+  auth,
+  isTeacher,
+  signOut,
+  updateAccountName,
+} from '../stores/useAuth'
+import {
+  cloud,
+  joinClassroom,
+  leaveClassroom,
+  loadMyClassrooms,
+} from '../stores/useCloud'
+import { cloudSync, syncNow } from '../stores/useCloudSync'
 import {
   accuracy,
   exportProgress,
@@ -13,8 +28,10 @@ import {
   updateAI,
   updateProfile,
 } from '../stores/useProgress'
-import { formatNumber } from '../utils/format'
+import { formatNumber, timeAgo } from '../utils/format'
 import { playFeedback } from '../utils/sound'
+
+const router = useRouter()
 
 const LAB_KEY = 'codequest.lab.v1'
 const GOAL_PRESETS = [60, 120, 200, 300]
@@ -35,6 +52,24 @@ const fileInput = ref(null)
 const notice = ref(null)
 const testState = ref('idle')
 const testMessage = ref('')
+const joinCode = ref('')
+const joinError = ref('')
+const joining = ref(false)
+const signingOut = ref(false)
+const syncingNow = ref(false)
+
+const cloudConfigured = isSupabaseConfigured
+const accountEmail = computed(() => auth.user?.email || '')
+const roleLabel = computed(() => (isTeacher.value ? 'Docente' : 'Estudiante'))
+const syncLabel = computed(() => {
+  if (cloudSync.status === 'syncing') return 'Sincronizando cambios…'
+  if (cloudSync.status === 'error') return cloudSync.error || 'No se pudo sincronizar.'
+  if (cloudSync.lastSyncedAt) {
+    return `Última sincronización: ${timeAgo(cloudSync.lastSyncedAt)}.`
+  }
+  if (cloudSync.status === 'synced') return 'Progreso sincronizado con la nube.'
+  return 'Tu progreso se guardará en la nube automáticamente.'
+})
 
 let noticeTimer = null
 let testController = null
@@ -92,6 +127,9 @@ function showNotice(type, text) {
 function ensureName() {
   if (!name.value.trim()) updateProfile({ name: 'Explorador' })
   else updateProfile({ name: name.value.trim() })
+  if (cloudConfigured && auth.user) {
+    updateAccountName(name.value.trim() || accountName.value)
+  }
 }
 
 function toggleSound() {
@@ -228,6 +266,72 @@ function wipeLab() {
   showNotice('success', 'Las soluciones guardadas del laboratorio se borraron.')
 }
 
+async function handleJoinClass() {
+  const code = joinCode.value.trim().toUpperCase()
+  if (code.length < 4) {
+    joinError.value = 'Escribe el código que te dio tu docente.'
+    return
+  }
+  joining.value = true
+  joinError.value = ''
+  try {
+    await joinClassroom(code)
+    joinCode.value = ''
+    showNotice('success', 'Te uniste a la clase. Tu progreso ya está vinculado.')
+  } catch (error) {
+    joinError.value = error.message
+  } finally {
+    joining.value = false
+  }
+}
+
+async function handleLeaveClass(classroomId) {
+  if (!window.confirm('¿Salir de esta clase? Tu progreso se conserva.')) return
+  try {
+    await leaveClassroom(classroomId)
+    showNotice('success', 'Saliste de la clase.')
+  } catch (error) {
+    showNotice('error', error.message)
+  }
+}
+
+async function handleSyncNow() {
+  if (syncingNow.value) return
+  syncingNow.value = true
+  try {
+    const ok = await syncNow()
+    if (ok) showNotice('success', 'Progreso sincronizado con la nube.')
+    else showNotice('error', cloudSync.error || 'No se pudo sincronizar el progreso.')
+  } finally {
+    syncingNow.value = false
+  }
+}
+
+async function handleSignOut() {
+  if (
+    !window.confirm(
+      '¿Cerrar sesión? Se borrarán los datos locales de este estudiante en este dispositivo.',
+    )
+  ) {
+    return
+  }
+  signingOut.value = true
+  try {
+    await signOut()
+    await router.push({ name: 'login' })
+  } catch (error) {
+    showNotice('error', error.message)
+  } finally {
+    signingOut.value = false
+  }
+}
+
+onMounted(() => {
+  if (cloudConfigured && auth.user) {
+    loadMyClassrooms().catch(() => {})
+  }
+})
+
 onBeforeUnmount(() => {
   clearTimeout(noticeTimer)
   if (testController) testController.abort()
@@ -240,14 +344,18 @@ onBeforeUnmount(() => {
       <div>
         <span class="eyebrow">Ajustes</span>
         <h1>Haz CodeQuest <span class="gradient-text">a tu medida</span></h1>
-        <p>
+        <p v-if="cloudConfigured">
+          Tu perfil, tu ritmo y tu mentor, sincronizados en la nube para que continúes en
+          cualquier dispositivo.
+        </p>
+        <p v-else>
           Tu perfil, tu ritmo y tu mentor. Todo se guarda automáticamente en este navegador,
           sin cuentas ni servidores.
         </p>
       </div>
       <span class="chip chip-brand">
-        <AppIcon name="shield" :size="14" />
-        Guardado automático
+        <AppIcon :name="cloudConfigured ? 'cloud' : 'shield'" :size="14" />
+        {{ cloudConfigured ? 'Sincronización en la nube' : 'Guardado automático' }}
       </span>
     </header>
 
@@ -268,6 +376,144 @@ onBeforeUnmount(() => {
 
     <div class="settings-layout animate-in delay-1">
       <div class="stack">
+        <section class="card settings-card account-card">
+          <div class="settings-head">
+            <span class="settings-icon settings-icon-blue">
+              <AppIcon name="cloud" :size="20" />
+            </span>
+            <div>
+              <h2>Cuenta y sincronización</h2>
+              <p v-if="cloudConfigured">
+                Tu progreso se guarda en Supabase y te sigue en cualquier dispositivo.
+              </p>
+              <p v-else>
+                Modo local: el progreso vive solo en este navegador. Conecta Supabase para usar
+                cuentas y el panel docente.
+              </p>
+            </div>
+          </div>
+
+          <div class="settings-body">
+            <template v-if="cloudConfigured && auth.user">
+              <div class="account-row">
+                <div class="account-identity">
+                  <span class="account-avatar">{{ initials }}</span>
+                  <div>
+                    <strong>{{ accountName }}</strong>
+                    <small>{{ accountEmail }}</small>
+                  </div>
+                </div>
+                <span class="chip" :class="isTeacher ? 'chip-violet' : 'chip-brand'">
+                  <AppIcon :name="isTeacher ? 'graduation' : 'user'" :size="13" />
+                  {{ roleLabel }}
+                </span>
+              </div>
+
+              <div class="sync-row">
+                <div>
+                  <strong class="sync-title">Sincronización</strong>
+                  <p class="help" :class="{ 'sync-error': cloudSync.status === 'error' }">
+                    {{ syncLabel }}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-outline btn-sm"
+                  :disabled="syncingNow || cloudSync.status === 'syncing'"
+                  @click="handleSyncNow"
+                >
+                  <AppIcon
+                    name="refresh"
+                    :size="14"
+                    :class="{ spin: syncingNow || cloudSync.status === 'syncing' }"
+                  />
+                  {{ syncingNow || cloudSync.status === 'syncing' ? 'Sincronizando…' : 'Sincronizar ahora' }}
+                </button>
+              </div>
+
+              <div v-if="isTeacher" class="account-actions">
+                <RouterLink to="/docente" class="btn btn-primary btn-sm">
+                  <AppIcon name="users" :size="15" />
+                  Ir al panel docente
+                </RouterLink>
+                <span class="help">Crea clases y revisa el progreso de tus estudiantes.</span>
+              </div>
+
+              <div v-else class="classroom-block">
+                <h3 class="subhead">
+                  <AppIcon name="graduation" :size="16" />
+                  Mis clases
+                </h3>
+
+                <div v-if="cloud.classrooms.length" class="class-list">
+                  <div v-for="room in cloud.classrooms" :key="room.id" class="class-pill">
+                    <div>
+                      <strong>{{ room.name }}</strong>
+                      <small>Código {{ room.join_code }}</small>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-ghost btn-sm"
+                      @click="handleLeaveClass(room.id)"
+                    >
+                      Salir
+                    </button>
+                  </div>
+                </div>
+                <p v-else class="help">
+                  Aún no perteneces a ninguna clase. Pídele el código a tu docente.
+                </p>
+
+                <form class="join-form" @submit.prevent="handleJoinClass">
+                  <input
+                    v-model="joinCode"
+                    class="input mono"
+                    type="text"
+                    maxlength="12"
+                    placeholder="Código de clase (ej. A1B2C3)"
+                    aria-label="Código de clase"
+                  />
+                  <button type="submit" class="btn btn-primary btn-sm" :disabled="joining">
+                    <AppIcon :name="joining ? 'rotate' : 'plus'" :size="15" :class="{ spin: joining }" />
+                    {{ joining ? 'Uniendo…' : 'Unirme' }}
+                  </button>
+                </form>
+                <p v-if="joinError" class="join-error">{{ joinError }}</p>
+              </div>
+
+              <div class="account-actions account-signout">
+                <button type="button" class="btn btn-ghost btn-sm" :disabled="signingOut" @click="handleSignOut">
+                  <AppIcon name="logout" :size="15" />
+                  {{ signingOut ? 'Cerrando sesión…' : 'Cerrar sesión' }}
+                </button>
+              </div>
+            </template>
+
+            <template v-else-if="!cloudConfigured">
+              <ol class="setup-steps">
+                <li>Crea un proyecto gratis en <strong>supabase.com</strong>.</li>
+                <li>Ejecuta <code>supabase/schema.sql</code> en el SQL Editor.</li>
+                <li>
+                  Copia <code>.env.example</code> a <code>.env.local</code> con la URL y la anon
+                  key de tu proyecto.
+                </li>
+                <li>Reinicia el servidor y promueve tu cuenta a docente si la necesitas.</li>
+              </ol>
+              <p class="help">
+                Mientras tanto puedes seguir practicando: todo se guarda en este navegador.
+              </p>
+            </template>
+
+            <template v-else>
+              <p class="help">Inicia sesión para sincronizar tu progreso y unirte a tu clase.</p>
+              <RouterLink to="/login" class="btn btn-primary btn-sm">
+                <AppIcon name="chevron-right" :size="15" />
+                Iniciar sesión
+              </RouterLink>
+            </template>
+          </div>
+        </section>
+
         <section class="card settings-card">
           <div class="settings-head">
             <span class="settings-icon"><AppIcon name="user" :size="20" /></span>
@@ -291,7 +537,13 @@ onBeforeUnmount(() => {
                   autocomplete="given-name"
                   @blur="ensureName"
                 />
-                <span class="help">Se usa en el panel, el mentor y tus logros.</span>
+                <span class="help">
+                  {{
+                    cloudConfigured
+                      ? 'Se sincroniza con tu cuenta y se usa en el panel, el mentor y tus logros.'
+                      : 'Se usa en el panel, el mentor y tus logros.'
+                  }}
+                </span>
               </div>
 
               <div class="field">
@@ -665,29 +917,65 @@ onBeforeUnmount(() => {
             <h3>Privacidad por diseño</h3>
           </div>
           <ul class="privacy-list">
-            <li>
-              <AppIcon name="check" :size="14" />
-              <span>Todo tu progreso vive en el <code>localStorage</code> de este navegador.</span>
-            </li>
-            <li>
-              <AppIcon name="check" :size="14" />
-              <span>No hay cuentas, cookies de seguimiento ni servidor de CodeQuest.</span>
-            </li>
-            <li>
-              <AppIcon name="check" :size="14" />
-              <span>El código del laboratorio se ejecuta aislado y nunca sale de tu equipo.</span>
-            </li>
-            <li>
-              <AppIcon name="info" :size="14" />
-              <span>
-                Si activas la IA remota, tus mensajes y la clave se envían al proveedor que
-                configures, bajo sus propias políticas.
-              </span>
-            </li>
+            <template v-if="cloudConfigured">
+              <li>
+                <AppIcon name="check" :size="14" />
+                <span>
+                  Tu progreso se guarda en Supabase. Solo tú y el docente de tu clase pueden
+                  verlo.
+                </span>
+              </li>
+              <li>
+                <AppIcon name="check" :size="14" />
+                <span>Las políticas RLS impiden que otros estudiantes accedan a tus datos.</span>
+              </li>
+              <li>
+                <AppIcon name="check" :size="14" />
+                <span>La clave de tu mentor IA nunca se sube a la nube.</span>
+              </li>
+              <li>
+                <AppIcon name="check" :size="14" />
+                <span>El código del laboratorio se ejecuta aislado y nunca sale de tu equipo.</span>
+              </li>
+              <li>
+                <AppIcon name="info" :size="14" />
+                <span>
+                  Si activas la IA remota, tus mensajes y la clave se envían al proveedor que
+                  configures, bajo sus propias políticas.
+                </span>
+              </li>
+            </template>
+            <template v-else>
+              <li>
+                <AppIcon name="check" :size="14" />
+                <span>Todo tu progreso vive en el <code>localStorage</code> de este navegador.</span>
+              </li>
+              <li>
+                <AppIcon name="check" :size="14" />
+                <span>No hay cuentas, cookies de seguimiento ni servidor de CodeQuest.</span>
+              </li>
+              <li>
+                <AppIcon name="check" :size="14" />
+                <span>El código del laboratorio se ejecuta aislado y nunca sale de tu equipo.</span>
+              </li>
+              <li>
+                <AppIcon name="info" :size="14" />
+                <span>
+                  Si activas la IA remota, tus mensajes y la clave se envían al proveedor que
+                  configures, bajo sus propias políticas.
+                </span>
+              </li>
+            </template>
           </ul>
           <p class="privacy-note">
-            Limpiar los datos del navegador borra tu progreso. Exporta un respaldo de vez en
-            cuando.
+            <template v-if="cloudConfigured">
+              Al cerrar sesión se limpian los datos locales de este dispositivo. Tu progreso
+              sigue seguro en la nube.
+            </template>
+            <template v-else>
+              Limpiar los datos del navegador borra tu progreso. Exporta un respaldo de vez en
+              cuando.
+            </template>
           </p>
         </section>
 
@@ -1149,6 +1437,185 @@ onBeforeUnmount(() => {
   font-size: 0.78rem;
   color: #f3b7c1;
   margin-bottom: 10px;
+}
+
+.account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px;
+  border-radius: 13px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.account-identity {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.account-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--gradient);
+  color: #06121a;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.account-identity div {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+  min-width: 0;
+}
+
+.account-identity strong {
+  font-size: 0.86rem;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-identity small {
+  font-size: 0.72rem;
+  color: var(--muted-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sync-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.sync-row .help {
+  margin-top: 2px;
+}
+
+.sync-title {
+  font-size: 0.84rem;
+  color: var(--text);
+}
+
+.sync-error {
+  color: #f3b7c1;
+}
+
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.account-signout {
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.subhead {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  color: var(--text);
+  margin-bottom: 9px;
+}
+
+.subhead svg {
+  color: var(--brand);
+}
+
+.classroom-block {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.class-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.class-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.class-pill div {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+  min-width: 0;
+}
+
+.class-pill strong {
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+.class-pill small {
+  font-size: 0.68rem;
+  color: var(--muted-2);
+  font-family: var(--font-mono);
+}
+
+.join-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.join-form .input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.join-error {
+  font-size: 0.74rem;
+  color: #f3b7c1;
+}
+
+.setup-steps {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.setup-steps code {
+  color: var(--brand);
+  font-size: 0.9em;
+}
+
+.setup-steps strong {
+  color: var(--text);
 }
 
 .profile-summary {

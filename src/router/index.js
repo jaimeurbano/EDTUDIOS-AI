@@ -1,6 +1,20 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { isSupabaseConfigured } from '../lib/supabase'
+import { auth, isTeacher } from '../stores/useAuth'
 
 const routes = [
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/AuthView.vue'),
+    meta: { title: 'Iniciar sesión', public: true },
+  },
+  {
+    path: '/registro',
+    name: 'register',
+    component: () => import('../views/AuthView.vue'),
+    meta: { title: 'Crear cuenta', public: true },
+  },
   {
     path: '/',
     name: 'home',
@@ -32,6 +46,16 @@ const routes = [
     meta: { title: 'Mentor IA', subtitle: 'Tu copiloto de estudio' },
   },
   {
+    path: '/docente',
+    name: 'teacher',
+    component: () => import('../views/TeacherView.vue'),
+    meta: {
+      title: 'Panel docente',
+      subtitle: 'Progreso de tus estudiantes',
+      requiresTeacher: true,
+    },
+  },
+  {
     path: '/ajustes',
     name: 'settings',
     component: () => import('../views/SettingsView.vue'),
@@ -52,4 +76,28 @@ export const router = createRouter({
     if (savedPosition) return savedPosition
     return { top: 0, behavior: 'smooth' }
   },
+})
+
+router.beforeEach((to) => {
+  // Sin Supabase configurado la app funciona en modo local, sin cuentas.
+  if (!isSupabaseConfigured) return true
+
+  const isPublic = Boolean(to.meta.public)
+  // Usamos la sesión, no auth.user: un registro pendiente de confirmar
+  // crea un usuario pero no una sesión válida.
+  const signedIn = Boolean(auth.session)
+
+  if (to.meta.requiresTeacher && !isTeacher.value) {
+    return signedIn ? { name: 'home' } : { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  if (!isPublic && !signedIn) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  if (isPublic && signedIn) {
+    return { name: 'home' }
+  }
+
+  return true
 })

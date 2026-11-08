@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import AppTopbar from './components/AppTopbar.vue'
@@ -7,13 +7,49 @@ import MobileNav from './components/MobileNav.vue'
 import OnboardingModal from './components/OnboardingModal.vue'
 import ToastStack from './components/ToastStack.vue'
 import AppIcon from './components/AppIcon.vue'
+import { isSupabaseConfigured } from './lib/supabase'
 import { progress } from './stores/useProgress'
 
 const route = useRoute()
 const showOnboarding = ref(false)
-const showFab = computed(() => route.path !== '/mentor')
+const prefersReduced = ref(false)
+const isAuthPage = computed(() => Boolean(route.meta.public))
+const showFab = computed(() => !isAuthPage.value && route.path !== '/mentor')
+// Con movimiento reducido desactivamos la transición de Vue por completo:
+// el CSS la acorta a 0.01ms y Vue puede quedarse esperando el evento.
+const motionEnabled = computed(
+  () => !prefersReduced.value && !progress.profile.reducedMotion,
+)
+
+let motionQuery = null
+
+function syncSystemMotion(event) {
+  prefersReduced.value = event.matches
+}
 
 onMounted(() => {
+  maybeShowOnboarding()
+  applyMotionPreference(progress.profile.reducedMotion)
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    prefersReduced.value = motionQuery.matches
+    motionQuery.addEventListener?.('change', syncSystemMotion)
+  }
+})
+
+onBeforeUnmount(() => {
+  motionQuery?.removeEventListener?.('change', syncSystemMotion)
+})
+
+watch(
+  () => route.path,
+  () => maybeShowOnboarding(),
+)
+
+function maybeShowOnboarding() {
+  // Con cuentas, el nombre llega del perfil de Supabase; el onboarding
+  // solo hace falta en el modo local sin backend.
+  if (isAuthPage.value || isSupabaseConfigured) return
   try {
     if (!progress.profile.name && !localStorage.getItem('codequest.onboarded')) {
       showOnboarding.value = true
@@ -21,8 +57,7 @@ onMounted(() => {
   } catch {
     /* ignore */
   }
-  applyMotionPreference(progress.profile.reducedMotion)
-})
+}
 
 function applyMotionPreference(reduced) {
   document.documentElement.classList.toggle('reduce-motion', Boolean(reduced))
@@ -43,36 +78,42 @@ watch(
 </script>
 
 <template>
-  <a href="#contenido" class="skip-link">Saltar al contenido</a>
+  <a v-if="!isAuthPage" href="#contenido" class="skip-link">Saltar al contenido</a>
 
-  <div class="app-shell">
-    <AppSidebar />
+  <RouterView v-if="isAuthPage" />
 
-    <div class="app-main">
-      <AppTopbar />
-      <main id="contenido" class="page-content" tabindex="-1">
-        <RouterView v-slot="{ Component }">
-          <Transition name="page" mode="out-in">
-            <component :is="Component" />
-          </Transition>
-        </RouterView>
-      </main>
+  <template v-else>
+    <div class="app-shell">
+      <AppSidebar />
+
+      <div class="app-main">
+        <AppTopbar />
+        <main id="contenido" class="page-content" tabindex="-1">
+          <RouterView v-slot="{ Component, route: currentRoute }">
+            <Transition v-if="motionEnabled" name="page" mode="out-in">
+              <component :is="Component" :key="currentRoute.path" />
+            </Transition>
+            <component v-else :is="Component" :key="currentRoute.path" />
+          </RouterView>
+        </main>
+      </div>
     </div>
-  </div>
 
-  <MobileNav />
+    <MobileNav />
+
+    <Transition name="slide" :css="motionEnabled">
+      <RouterLink v-if="showFab" to="/mentor" class="mentor-fab" aria-label="Abrir el mentor IA">
+        <span class="mentor-fab-icon">
+          <AppIcon name="chat" :size="22" />
+        </span>
+        <span class="mentor-fab-text">Mentor</span>
+      </RouterLink>
+    </Transition>
+
+    <OnboardingModal v-if="showOnboarding" @close="showOnboarding = false" />
+  </template>
+
   <ToastStack />
-
-  <Transition name="slide">
-    <RouterLink v-if="showFab" to="/mentor" class="mentor-fab" aria-label="Abrir el mentor IA">
-      <span class="mentor-fab-icon">
-        <AppIcon name="chat" :size="22" />
-      </span>
-      <span class="mentor-fab-text">Mentor</span>
-    </RouterLink>
-  </Transition>
-
-  <OnboardingModal v-if="showOnboarding" @close="showOnboarding = false" />
 </template>
 
 <style scoped>

@@ -4,10 +4,11 @@ import { RouterLink } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import BrandMark from './BrandMark.vue'
 import ProgressRing from './ProgressRing.vue'
+import { isTeacher } from '../stores/useAuth'
 import { dailyProgress, levelInfo, progress, streakAlive } from '../stores/useProgress'
 import { formatNumber, pluralize } from '../utils/format'
 
-const navItems = [
+const baseNav = [
   { to: '/', label: 'Inicio', icon: 'home', exact: true },
   { to: '/practicar', label: 'Practicar', icon: 'target' },
   { to: '/laboratorio', label: 'Laboratorio', icon: 'lab' },
@@ -15,6 +16,13 @@ const navItems = [
   { to: '/mentor', label: 'Mentor IA', icon: 'chat' },
   { to: '/ajustes', label: 'Ajustes', icon: 'settings' },
 ]
+
+const navItems = computed(() => {
+  if (!isTeacher.value) return baseNav
+  const items = [...baseNav]
+  items.splice(items.length - 1, 0, { to: '/docente', label: 'Docente', icon: 'users' })
+  return items
+})
 
 const displayName = computed(() => progress.profile.name || 'Explorador')
 const initials = computed(() =>

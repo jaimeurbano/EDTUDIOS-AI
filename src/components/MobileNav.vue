@@ -1,14 +1,21 @@
 <script setup>
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppIcon from './AppIcon.vue'
+import { isTeacher } from '../stores/useAuth'
 
-const items = [
+const baseItems = [
   { to: '/', label: 'Inicio', icon: 'home', exact: true },
   { to: '/practicar', label: 'Practicar', icon: 'target' },
   { to: '/laboratorio', label: 'Lab', icon: 'lab' },
   { to: '/progreso', label: 'Progreso', icon: 'chart' },
   { to: '/mentor', label: 'Mentor', icon: 'chat' },
 ]
+
+const items = computed(() => {
+  if (!isTeacher.value) return baseItems
+  return [...baseItems, { to: '/docente', label: 'Docente', icon: 'users' }]
+})
 </script>
 
 <template>
@@ -40,7 +47,8 @@ const items = [
     right: 0;
     z-index: 45;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
     gap: 2px;
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
     background: rgba(8, 12, 21, 0.94);

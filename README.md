@@ -2,7 +2,12 @@
 
 > Aprende JavaScript, Vue.js y CSS con quizzes que se adaptan a ti, un mentor disponible 24/7 y retos de código en vivo.
 
-CodeQuest es una plataforma de aprendizaje **100 % frontend** construida con Vue 3. No necesita backend, cuentas ni base de datos: todo tu progreso vive en el navegador. El motor de práctica ajusta la dificultad pregunta a pregunta, evita repetir ejercicios y prioriza justo los conceptos que más te cuestan.
+CodeQuest es una plataforma de aprendizaje construida con **Vue 3**. Puede funcionar de dos formas:
+
+- **Modo local:** sin backend ni cuentas. Todo el progreso vive en el navegador.
+- **Modo nube:** con **Supabase** (Postgres + Auth gratis). Cada estudiante inicia sesión desde cualquier dispositivo y el docente ve el progreso real de su clase.
+
+El motor de práctica ajusta la dificultad pregunta a pregunta, evita repetir ejercicios y prioriza justo los conceptos que más cuestan.
 
 ---
 
@@ -12,11 +17,13 @@ CodeQuest es una plataforma de aprendizaje **100 % frontend** construida con Vue
 - **Sin repetición** — cada pregunta respondida se marca como vista. Solo vuelve a aparecer cuando se agota el banco del tema, y en ese caso prioriza las vistas hace más tiempo.
 - **Repaso espaciado** — los conceptos fallados vuelven antes; los dominados se espacian con intervalos de 1, 3, 7, 14, 30 y 60 días.
 - **Modo mezcla** — sesiones que alternan JavaScript, Vue y CSS dando más peso a los temas con menor dominio.
-- **Mentor IA** — base de conocimiento local con búsqueda por intención y modo socrático (pistas y preguntas guía antes que respuestas). Opcionalmente puedes conectar cualquier API compatible con OpenAI.
-- **Laboratorio de código** — 6 retos de JavaScript ejecutados en un Web Worker aislado con timeout de 2,5 s, y 4 retos de CSS con vista previa en vivo y objetivos verificables.
+- **Mentor IA** — base de conocimiento local con búsqueda por intención y modo socrático. Opcionalmente puedes conectar cualquier API compatible con OpenAI.
+- **Laboratorio de código** — retos de JavaScript ejecutados en un Web Worker aislado y retos de CSS con vista previa en vivo.
 - **Gamificación** — XP, niveles, rachas, meta diaria, combos, 14 logros y un mapa de constancia de 28 días.
+- **Cuentas y sincronización** — login con correo y contraseña, progreso en la nube y continuidad entre dispositivos.
+- **Panel docente** — clases con código de invitación, lista de estudiantes, XP, precisión, racha, actividad reciente y desglose por tema.
+- **Privacidad por diseño** — Row Level Security: cada estudiante solo ve sus datos y cada docente solo ve los estudiantes de sus propias clases. La clave del mentor IA nunca se sube a la nube.
 - **Diseño oscuro tipo neón** — sistema de diseño con variables CSS, sidebar responsive, navegación móvil, animaciones suaves y soporte de `prefers-reduced-motion`.
-- **Privacidad por diseño** — sin cuentas, sin cookies de seguimiento y sin servidor propio. Exporta e importa tu progreso en JSON cuando quieras.
 
 ---
 
@@ -29,10 +36,11 @@ CodeQuest es una plataforma de aprendizaje **100 % frontend** construida con Vue
 | Rutas | Vue Router 4 (hash history) |
 | Estado | Stores reactivos propios (`reactive` + `computed`) |
 | Estilos | CSS puro con variables y `scoped styles` |
-| Persistencia | `localStorage` |
+| Persistencia local | `localStorage` |
+| Backend opcional | Supabase (Postgres + Auth + RLS) |
 | IA | Base local + API compatible con OpenAI (opcional) |
 
-Sin Pinia, sin framework CSS y sin dependencias de UI: el objetivo es mantener el proyecto pequeño, legible y fácil de desplegar en cualquier hosting estático.
+Sin Pinia, sin framework CSS y sin dependencias de UI. El modo local sigue funcionando aunque no configures Supabase.
 
 ---
 
@@ -47,6 +55,9 @@ npm install
 # Servidor de desarrollo (http://localhost:5173)
 npm run dev
 
+# Servidor accesible desde otros dispositivos de la red local
+npm run dev -- --host 0.0.0.0
+
 # Compilar para producción
 npm run build
 
@@ -54,7 +65,115 @@ npm run build
 npm run preview
 ```
 
-El proyecto usa `base: './'` y `createWebHashHistory()`, así que la carpeta `dist/` funciona en cualquier hosting estático (GitHub Pages, Netlify, Vercel, un servidor propio) sin configurar rewrites.
+El proyecto usa `base: './'` y `createWebHashHistory()`, así que la carpeta `dist/` funciona en cualquier hosting estático (GitHub Pages, Netlify, Vercel, Cloudflare Pages, un servidor propio) sin configurar rewrites.
+
+### Modo local (sin backend)
+
+Si no existe `.env.local` o faltan `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`, CodeQuest arranca en modo local:
+
+- No hay pantalla de login.
+- El progreso se guarda en `localStorage`.
+- El panel docente muestra las instrucciones de configuración.
+
+### Modo nube (recomendado para clases)
+
+Sigue la sección **Backend con Supabase** de más abajo.
+
+---
+
+## 🔐 Backend con Supabase (cuentas y panel docente)
+
+Supabase ofrece un plan gratuito con Postgres, autenticación y políticas RLS. No hay que mantener ningún servidor propio.
+
+### 1. Crear el proyecto
+
+1. Entra en [supabase.com](https://supabase.com) y crea un proyecto gratuito.
+2. Espera a que termine el aprovisionamiento.
+
+### 2. Crear las tablas y políticas
+
+1. Abre **SQL Editor** en el panel de Supabase.
+2. Copia y ejecuta el contenido completo de [`supabase/schema.sql`](supabase/schema.sql).
+
+El script crea:
+
+| Tabla | Contenido |
+| --- | --- |
+| `profiles` | `id`, `email`, `full_name`, `role` (`student` / `teacher`) |
+| `student_progress` | Progreso completo del estudiante en una columna `jsonb` |
+| `classrooms` | Clases con nombre, código de 6 caracteres y docente |
+| `classroom_members` | Relación estudiante ↔ clase |
+
+También crea las funciones `create_classroom`, `join_classroom`, `leave_classroom`, los triggers de alta de perfil y todas las políticas RLS.
+
+### 3. Configurar el correo de autenticación
+
+En **Authentication → Providers → Email**:
+
+- **Para uso en clase:** desactiva **Confirm email** para que los estudiantes entren de inmediato.
+- **Si prefieres confirmar correos:** configura **Authentication → URL Configuration → Site URL** y añade tu dominio de producción en **Redirect URLs**.
+
+Sin esto, el registro puede quedar pendiente de confirmación y el estudiante no podrá iniciar sesión.
+
+### 4. Conectar la app
+
+1. Copia `.env.example` a `.env.local`.
+2. En **Project Settings → API** copia:
+   - **Project URL** → `VITE_SUPABASE_URL`
+   - **anon public key** → `VITE_SUPABASE_ANON_KEY`
+
+```env
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu-clave-anonima
+```
+
+3. Reinicia el servidor de desarrollo.
+
+> ⚠️ **Nunca** pongas la clave `service_role` en el frontend ni en `.env.local`. Esa clave omite RLS. La clave `anon` es pública y está protegida por las políticas del esquema.
+
+### 5. Promover una cuenta a docente
+
+El rol **nunca** se acepta desde el registro. Después de que la persona cree su cuenta, ejecuta en el **SQL Editor**:
+
+```sql
+update public.profiles
+set role = 'teacher'
+where email = 'docente@correo.com';
+```
+
+Luego pide que cierre y vuelva a iniciar sesión para que la app reciba el rol actualizado.
+
+### 6. Flujo de una clase
+
+1. El docente entra a **Panel docente** y crea una clase (por ejemplo `8°B`).
+2. La app genera un código de 6 caracteres, por ejemplo `A1B2C3`.
+3. El docente comparte el código con sus estudiantes.
+4. Cada estudiante inicia sesión, va a **Ajustes → Cuenta y sincronización**, escribe el código y pulsa **Unirme**.
+5. El progreso se sincroniza automáticamente. El docente puede refrescar el panel y ver XP, precisión, racha, última actividad y desglose por tema.
+
+### 7. Seguridad y RLS
+
+- `profiles`: cada usuario ve su perfil; un docente ve los perfiles de estudiantes de sus clases.
+- `student_progress`: solo el estudiante dueño o su docente pueden leerlo.
+- `classrooms`: solo el docente dueño y los estudiantes inscritos.
+- `classroom_members`: solo el estudiante y el docente de esa clase.
+- Las funciones auxiliares son `security definer` para evitar recursión en las políticas.
+- Un trigger impide que un usuario autenticado se cambie el rol a sí mismo.
+- La sincronización aplica **last-write-wins** y elimina `ai.apiKey` antes de subir el progreso.
+- Al cerrar sesión se limpian progreso, chat, laboratorio y preferencias locales de ese dispositivo.
+
+### 8. Despliegue
+
+1. Compila con `npm run build`.
+2. Sube `dist/` a Netlify, Vercel, Cloudflare Pages o cualquier hosting estático.
+3. Configura las mismas variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en el hosting.
+4. Añade la URL pública en **Supabase → Authentication → URL Configuration**.
+
+### 9. Plan gratuito
+
+- 500 MB de base de datos, 50 000 usuarios activos mensuales y 5 GB de tráfico.
+- Los proyectos gratuitos pueden pausarse tras un periodo de inactividad; se reactivan desde el panel.
+- Para una clase típica, el consumo es mínimo: el progreso es un único JSON por estudiante.
 
 ---
 
@@ -62,12 +181,15 @@ El proyecto usa `base: './'` y `createWebHashHistory()`, así que la carpeta `di
 
 | Ruta | Vista | Descripción |
 | --- | --- | --- |
+| `/login` | Iniciar sesión | Acceso con correo y contraseña (modo nube). |
+| `/registro` | Crear cuenta | Registro de estudiantes y docentes. |
 | `/` | Panel | Meta diaria, racha, temas, recomendaciones y actividad. |
 | `/practicar` | Practicar | Configuración de sesión, quiz adaptativo y resumen final. |
 | `/laboratorio` | Laboratorio | Retos de JavaScript y CSS con ejecución real. |
 | `/progreso` | Mi progreso | Dominio por tema, conceptos, historial, heatmap y logros. |
 | `/mentor` | Mentor IA | Chat con base local o modelo externo. |
-| `/ajustes` | Ajustes | Perfil, preferencias, IA, respaldo y reinicio. |
+| `/docente` | Panel docente | Clases, códigos y progreso de estudiantes (solo docentes). |
+| `/ajustes` | Ajustes | Cuenta, clases, perfil, preferencias, IA y respaldo. |
 | `*` | 404 | Página no encontrada con atajos útiles. |
 
 ---
@@ -137,7 +259,7 @@ Hay presets para OpenAI, OpenRouter y Groq. La app llama directamente a `${baseU
 
 > ⚠️ **CORS y seguridad**
 >
-> - La clave se guarda **solo en `localStorage`** y se envía directamente al proveedor. Nunca pasa por un servidor de CodeQuest (no existe).
+> - La clave se guarda **solo en `localStorage`** y se envía directamente al proveedor. Nunca pasa por un servidor de CodeQuest ni se sube a Supabase.
 > - Algunos proveedores bloquean peticiones desde el navegador por CORS. En ese caso, usa un proveedor que lo permita o un proxy propio.
 > - No uses claves de producción en equipos compartidos. Si algo falla, CodeQuest responde automáticamente con el mentor local.
 
@@ -170,9 +292,12 @@ Las soluciones superadas se guardan en `codequest.lab.v1`.
 ├── index.html
 ├── package.json
 ├── vite.config.js
+├── .env.example
+├── supabase
+│   └── schema.sql               # Tablas, RLS, triggers y RPCs
 └── src
-    ├── App.vue                  # Shell, FAB del mentor, onboarding, reduced motion
-    ├── main.js
+    ├── App.vue                  # Shell, layout de auth, FAB, onboarding
+    ├── main.js                  # Bootstrap: initAuth → initCloudSync → montar
     ├── assets/styles/main.css   # Tokens de diseño y estilos globales
     ├── components/              # Sidebar, topbar, nav móvil, tarjetas, iconos…
     ├── composables/
@@ -182,13 +307,18 @@ Las soluciones superadas se guardan en `codequest.lab.v1`.
     │   ├── challenges.js        # Retos del laboratorio JS/CSS
     │   ├── knowledge.js         # Base del mentor local y prompts
     │   └── questions.js         # 60 preguntas (20 por tema, 4 por nivel)
-    ├── router/index.js
+    ├── lib/
+    │   └── supabase.js          # Cliente y detección de configuración
+    ├── router/index.js          # Rutas y guards de auth/docente
     ├── stores/
     │   ├── useAssistant.js      # Chat, IA local/remota y persistencia
+    │   ├── useAuth.js           # Sesión, perfil y rol
+    │   ├── useCloud.js          # Clases y progreso de estudiantes
+    │   ├── useCloudSync.js      # Pull/push del progreso y limpieza
     │   └── useProgress.js       # XP, niveles, dominio, logros, respaldo
     ├── utils/                   # Formato, Markdown, sonido y runner del worker
-    └── views/                   # Panel, Practicar, Laboratorio, Progreso,
-                                 # Mentor, Ajustes y 404
+    └── views/                   # Login, Panel, Practicar, Laboratorio,
+                                 # Progreso, Mentor, Docente, Ajustes y 404
 ```
 
 ### Banco de preguntas
@@ -212,6 +342,8 @@ Para añadir preguntas basta con seguir ese formato y mantener el `id` único. E
 | `codequest.socratic.v1` | Preferencia del modo socrático |
 | `codequest.lab.v1` | Retos del laboratorio superados |
 | `codequest.onboarded` | Marca de onboarding completado |
+| `codequest.lastUser` | Último usuario de Supabase en este navegador |
+| `codequest.localUpdatedAt` | Marca de tiempo del último cambio local para resolver conflictos |
 
 En **Ajustes → Datos y respaldo** puedes:
 
@@ -220,6 +352,13 @@ En **Ajustes → Datos y respaldo** puedes:
 - Vaciar el chat del mentor.
 - Borrar las soluciones del laboratorio.
 - Reiniciar el progreso conservando tu perfil y la configuración de IA.
+
+En modo nube, **Ajustes → Cuenta y sincronización** añade:
+
+- Estado de sincronización y botón **Sincronizar ahora**.
+- Unirse o salir de clases con código.
+- Acceso directo al panel docente.
+- Cierre de sesión con limpieza de datos locales.
 
 > El reinicio no borra el chat ni el laboratorio; usa los botones específicos para eso.
 
@@ -238,7 +377,10 @@ En **Ajustes → Datos y respaldo** puedes:
 
 ## ⚠️ Limitaciones conocidas
 
-- El progreso es local al navegador: no se sincroniza entre dispositivos.
+- El modo nube requiere configurar Supabase; sin credenciales la app funciona solo en local.
+- La sincronización usa **last-write-wins** por estudiante. No está pensada para editar el mismo progreso en dos dispositivos a la vez.
+- El panel docente muestra el progreso tal como lo sube cada estudiante; no hay validación anti-trampa.
+- Los proyectos gratuitos de Supabase pueden pausarse por inactividad.
 - El banco actual tiene 60 preguntas; al agotarse un tema se abren ciclos de repaso.
 - La ejecución de JavaScript es para ejercicios síncronos y promesas simples; no hay DOM ni módulos.
 - La validación de CSS es heurística (regex), no un parser completo.
@@ -248,12 +390,12 @@ En **Ajustes → Datos y respaldo** puedes:
 
 ## 🛣️ Roadmap
 
+- [x] Cuentas, sincronización en la nube y panel docente con Supabase.
 - [ ] Más preguntas y nuevos temas (TypeScript, accesibilidad, Git).
 - [ ] Editor con resaltado de sintaxis y números de línea.
 - [ ] Tests unitarios para el motor adaptativo y los objetivos del laboratorio.
-- [ ] Sincronización opcional mediante un backend ligero.
+- [ ] Informes de clase exportables en CSV/PDF.
 - [ ] Modo oscuro/claro y temas de color.
-- [ ] Exportación de un informe de progreso en PDF.
 - [ ] PWA instalable con soporte offline completo.
 
 ---
@@ -263,7 +405,8 @@ En **Ajustes → Datos y respaldo** puedes:
 1. Haz un fork y crea una rama con un nombre descriptivo.
 2. Mantén el estilo del proyecto: `<script setup>`, CSS con variables, textos en español y componentes pequeños.
 3. Verifica que `npm run build` termina sin errores.
-4. Abre un pull request explicando el cambio y, si aplica, añade preguntas o retos nuevos.
+4. Si tocas el backend, actualiza `supabase/schema.sql` y prueba las políticas RLS con dos cuentas distintas.
+5. Abre un pull request explicando el cambio y, si aplica, añade preguntas o retos nuevos.
 
 ---
 

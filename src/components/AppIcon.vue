@@ -193,6 +193,37 @@ const ICONS = {
   flag: [
     { t: 'path', d: 'M5 21V4M5 4h11l-1.5 3L16 10H5' },
   ],
+  mail: [
+    { t: 'rect', x: 3, y: 5, width: 18, height: 14, rx: 2 },
+    { t: 'path', d: 'm3 7 9 6 9-6' },
+  ],
+  users: [
+    { t: 'path', d: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' },
+    { t: 'circle', cx: 9, cy: 7, r: 4 },
+    { t: 'path', d: 'M22 21v-2a4 4 0 0 0-3-3.9' },
+    { t: 'path', d: 'M16 3.1a4 4 0 0 1 0 7.8' },
+  ],
+  logout: [
+    { t: 'path', d: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4' },
+    { t: 'path', d: 'm16 17 5-5-5-5' },
+    { t: 'path', d: 'M21 12H9' },
+  ],
+  search: [
+    { t: 'circle', cx: 11, cy: 11, r: 7 },
+    { t: 'path', d: 'm21 21-4.3-4.3' },
+  ],
+  link: [
+    { t: 'path', d: 'M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1' },
+    { t: 'path', d: 'M14 11a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1' },
+  ],
+  graduation: [
+    { t: 'path', d: 'm22 9-10-5L2 9l10 5 10-5z' },
+    { t: 'path', d: 'M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5' },
+    { t: 'path', d: 'M22 9v6' },
+  ],
+  cloud: [
+    { t: 'path', d: 'M18 18a4 4 0 0 0 .5-8A6 6 0 0 0 6.6 9.2 4.5 4.5 0 0 0 7 18h11z' },
+  ],
   dot: [{ t: 'circle', cx: 12, cy: 12, r: 4 }],
 }
 

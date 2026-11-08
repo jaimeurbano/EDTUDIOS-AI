@@ -409,6 +409,12 @@ export function importProgress(raw) {
   const parsed = JSON.parse(raw)
   if (!parsed || typeof parsed !== 'object') throw new Error('El archivo no es válido.')
   if (!parsed.version) throw new Error('El archivo no parece un respaldo de CodeQuest.')
+  applyProgressData(parsed)
+}
+
+export function applyProgressData(parsed) {
+  if (!parsed || typeof parsed !== 'object') return false
+  if (!parsed.version) return false
   const base = defaultState()
   Object.keys(progress).forEach((key) => delete progress[key])
   Object.assign(progress, {
@@ -422,6 +428,7 @@ export function importProgress(raw) {
   } catch {
     /* ignore */
   }
+  return true
 }
 
 export function getSeenMap() {
