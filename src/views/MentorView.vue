@@ -288,7 +288,7 @@ onBeforeUnmount(() => {
               <span class="mentor-online" />
             </span>
             <div>
-              <strong>Mentor CodeQuest</strong>
+              <strong>Mentor CodeQuizz-AI</strong>
               <small>{{ isRemoteConfigured ? 'Conectado a un modelo de IA' : 'Base de conocimiento local · sin conexión' }}</small>
             </div>
           </div>

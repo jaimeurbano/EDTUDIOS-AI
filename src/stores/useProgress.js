@@ -408,7 +408,7 @@ export function exportProgress() {
 export function importProgress(raw) {
   const parsed = JSON.parse(raw)
   if (!parsed || typeof parsed !== 'object') throw new Error('El archivo no es válido.')
-  if (!parsed.version) throw new Error('El archivo no parece un respaldo de CodeQuest.')
+  if (!parsed.version) throw new Error('El archivo no parece un respaldo de CodeQuizz-AI.')
   applyProgressData(parsed)
 }
 

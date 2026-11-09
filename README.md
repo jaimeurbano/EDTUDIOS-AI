@@ -1,8 +1,8 @@
-# CodeQuest
+# CodeQuizz-AI
 
 > Aprende JavaScript, Vue.js y CSS con quizzes que se adaptan a ti, un mentor disponible 24/7 y retos de código en vivo.
 
-CodeQuest es una plataforma de aprendizaje construida con **Vue 3**. Puede funcionar de dos formas:
+CodeQuizz-AI es una plataforma de aprendizaje construida con **Vue 3**. Puede funcionar de dos formas:
 
 - **Modo local:** sin backend ni cuentas. Todo el progreso vive en el navegador.
 - **Modo nube:** con **Supabase** (Postgres + Auth gratis). Cada estudiante inicia sesión desde cualquier dispositivo y el docente ve el progreso real de su clase.
@@ -69,7 +69,7 @@ El proyecto usa `base: './'` y `createWebHashHistory()`, así que la carpeta `di
 
 ### Modo local (sin backend)
 
-Si no existe `.env.local` o faltan `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`, CodeQuest arranca en modo local:
+Si no existe `.env.local` o faltan `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`, CodeQuizz-AI arranca en modo local:
 
 - No hay pantalla de login.
 - El progreso se guarda en `localStorage`.
@@ -259,9 +259,9 @@ Hay presets para OpenAI, OpenRouter y Groq. La app llama directamente a `${baseU
 
 > ⚠️ **CORS y seguridad**
 >
-> - La clave se guarda **solo en `localStorage`** y se envía directamente al proveedor. Nunca pasa por un servidor de CodeQuest ni se sube a Supabase.
+> - La clave se guarda **solo en `localStorage`** y se envía directamente al proveedor. Nunca pasa por un servidor de CodeQuizz-AI ni se sube a Supabase.
 > - Algunos proveedores bloquean peticiones desde el navegador por CORS. En ese caso, usa un proveedor que lo permita o un proxy propio.
-> - No uses claves de producción en equipos compartidos. Si algo falla, CodeQuest responde automáticamente con el mentor local.
+> - No uses claves de producción en equipos compartidos. Si algo falla, CodeQuizz-AI responde automáticamente con el mentor local.
 
 ---
 
@@ -410,4 +410,4 @@ En modo nube, **Ajustes → Cuenta y sincronización** añade:
 
 ---
 
-Hecho con Vue 3, curiosidad y bastante café. Si CodeQuest te ayuda a entender algo que antes parecía magia, ya valió la pena.
+Hecho con Vue 3, curiosidad y bastante café. Si CodeQuizz-AI te ayuda a entender algo que antes parecía magia, ya valió la pena.

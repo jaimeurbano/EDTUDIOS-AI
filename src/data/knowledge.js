@@ -1,4 +1,4 @@
-// Base de conocimiento del mentor de CodeQuest.
+// Base de conocimiento del mentor de CodeQuizz-AI.
 // Permite respuestas útiles sin conexión ni API key. Si el estudiante configura
 // un proveedor compatible con OpenAI, el mentor usará IA generativa.
 
@@ -10,7 +10,7 @@ export const KNOWLEDGE = [
     keywords: ['hola', 'buenas', 'hey', 'saludos', 'buenos dias', 'buenas tardes', 'buenas noches'],
     title: '¡Hola, futuro dev!',
     answer:
-      'Soy **Mentor**, tu asistente de CodeQuest. Puedo explicarte conceptos, revisar errores, darte pistas sin arruinarte la pregunta y proponerte ejercicios.\n\nPrueba con:\n- *“Explícame las promesas con un ejemplo”*\n- *“¿Por qué mi `map` devuelve undefined?”*\n- *“Diferencia entre `ref` y `reactive` en Vue”*\n- *“¿Cómo centro un div con flexbox?”*\n\n¿Qué quieres dominar hoy?',
+      'Soy **Mentor**, tu asistente de CodeQuizz-AI. Puedo explicarte conceptos, revisar errores, darte pistas sin arruinarte la pregunta y proponerte ejercicios.\n\nPrueba con:\n- *“Explícame las promesas con un ejemplo”*\n- *“¿Por qué mi `map` devuelve undefined?”*\n- *“Diferencia entre `ref` y `reactive` en Vue”*\n- *“¿Cómo centro un div con flexbox?”*\n\n¿Qué quieres dominar hoy?',
     related: ['como-estudiar', 'let-const-var'],
   },
   {
@@ -18,7 +18,7 @@ export const KNOWLEDGE = [
     keywords: ['estudiar', 'aprender', 'metodo', 'rutina', 'consejos', 'organizar', 'practicar'],
     title: 'Cómo aprender programación de verdad',
     answer:
-      'La programación no se aprende leyendo: se aprende **escribiendo y equivocándose**. Te propongo este ciclo de 30 minutos:\n\n1. **10 min de concepto** — lee o mira un ejemplo pequeño.\n2. **15 min de práctica** — resuelve un quiz y escribe el código a mano.\n3. **5 min de explicación** — cuéntale a alguien (o al mentor) lo que aprendiste.\n\nClaves que marcan la diferencia:\n- **Repetición espaciada:** vuelve a un tema a los 2, 7 y 15 días. CodeQuest ya lo hace por ti.\n- **Errores como pistas:** lee el mensaje completo y ubica la línea.\n- **Un proyecto pequeño:** un contador, una lista de tareas, una galería. Aprenderás más que con 10 tutoriales.\n- **No copies sin entender:** después de copiar, borra y reescribe.',
+      'La programación no se aprende leyendo: se aprende **escribiendo y equivocándose**. Te propongo este ciclo de 30 minutos:\n\n1. **10 min de concepto** — lee o mira un ejemplo pequeño.\n2. **15 min de práctica** — resuelve un quiz y escribe el código a mano.\n3. **5 min de explicación** — cuéntale a alguien (o al mentor) lo que aprendiste.\n\nClaves que marcan la diferencia:\n      - **Repetición espaciada:** vuelve a un tema a los 2, 7 y 15 días. CodeQuizz-AI ya lo hace por ti.\n- **Errores como pistas:** lee el mensaje completo y ubica la línea.\n- **Un proyecto pequeño:** un contador, una lista de tareas, una galería. Aprenderás más que con 10 tutoriales.\n- **No copies sin entender:** después de copiar, borra y reescribe.',
     related: ['depuracion', 'saludo'],
   },
   {
@@ -343,7 +343,7 @@ export function buildSystemPrompt(context = {}) {
     .join(', ')
 
   return [
-    'Eres Mentor, el asistente pedagógico de CodeQuest, una plataforma para aprender JavaScript, Vue.js y CSS.',
+    'Eres Mentor, el asistente pedagógico de CodeQuizz-AI, una plataforma para aprender JavaScript, Vue.js y CSS.',
     'Respondes en español claro, con ejemplos cortos y código bien formateado en bloques markdown.',
     'Tu objetivo es que el estudiante comprenda, no solo que copie la solución.',
     'Usa un tono cercano, motivador y directo. Máximo 220 palabras salvo que pidan profundidad.',

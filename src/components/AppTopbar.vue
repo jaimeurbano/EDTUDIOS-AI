@@ -8,7 +8,7 @@ import { formatNumber } from '../utils/format'
 
 const route = useRoute()
 
-const title = computed(() => route.meta.title || 'CodeQuest')
+const title = computed(() => route.meta.title || 'CodeQuizz-AI')
 const subtitle = computed(() => route.meta.subtitle || '')
 const initials = computed(() =>
   (progress.profile.name || 'Explorador')
@@ -25,7 +25,7 @@ const initials = computed(() =>
     <div class="topbar-left">
       <RouterLink to="/" class="mobile-brand" aria-label="Ir al inicio">
         <BrandMark :size="30" />
-        <span>CodeQuest</span>
+        <span>CodeQuizz-AI</span>
       </RouterLink>
       <div class="topbar-title">
         <span class="topbar-eyebrow">{{ subtitle || 'Tu espacio de aprendizaje' }}</span>

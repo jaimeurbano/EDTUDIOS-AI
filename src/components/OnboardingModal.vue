@@ -41,7 +41,7 @@ function skip() {
         <div class="onboarding-glow" aria-hidden="true" />
         <div class="onboarding-brand">
           <BrandMark :size="46" />
-          <span class="chip chip-brand">Bienvenido a CodeQuest</span>
+          <span class="chip chip-brand">Bienvenido a CodeQuizz-AI</span>
         </div>
 
         <h1 id="onboarding-title">

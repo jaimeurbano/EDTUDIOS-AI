@@ -40,7 +40,7 @@ const initials = computed(() =>
     <RouterLink to="/" class="brand">
       <BrandMark :size="38" />
       <span class="brand-text">
-        <strong>CodeQuest</strong>
+        <strong>CodeQuizz-AI</strong>
         <small>aprende programando</small>
       </span>
     </RouterLink>

@@ -108,7 +108,7 @@ async function submit() {
       <RouterLink to="/" class="auth-brand">
         <BrandMark :size="46" />
         <span class="auth-brand-text">
-          <strong>CodeQuest</strong>
+          <strong>CodeQuizz-AI</strong>
           <small>aprende programando</small>
         </span>
       </RouterLink>
@@ -162,7 +162,7 @@ async function submit() {
             <span class="eyebrow">Modo local</span>
             <h2>Backend sin configurar</h2>
             <p>
-              CodeQuest funciona ahora mismo sin cuentas: tu progreso se guarda en este
+              CodeQuizz-AI funciona ahora mismo sin cuentas: tu progreso se guarda en este
               navegador. Para activar el inicio de sesión y el panel docente, conecta Supabase
               (plan gratuito).
             </p>
@@ -186,7 +186,7 @@ async function submit() {
 
           <RouterLink to="/" class="btn btn-primary btn-lg btn-block">
             <AppIcon name="chevron-right" :size="17" />
-            Explorar CodeQuest en modo local
+            Explorar CodeQuizz-AI en modo local
           </RouterLink>
         </template>
 
@@ -312,7 +312,7 @@ async function submit() {
                 :size="17"
                 :class="{ spin: submitting }"
               />
-              {{ submitting ? 'Procesando…' : isRegister ? 'Crear mi cuenta' : 'Entrar a CodeQuest' }}
+              {{ submitting ? 'Procesando…' : isRegister ? 'Crear mi cuenta' : 'Entrar a CodeQuizz-AI' }}
             </button>
           </form>
 

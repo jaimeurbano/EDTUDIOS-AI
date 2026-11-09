@@ -1,4 +1,4 @@
-// Logros de CodeQuest. Cada logro sabe calcular su progreso y si está desbloqueado.
+// Logros de CodeQuizz-AI. Cada logro sabe calcular su progreso y si está desbloqueado.
 
 export const ACHIEVEMENTS = [
   {

@@ -32,7 +32,7 @@ const WELCOME = {
   content:
     '¡Hola! Soy **Mentor**, tu copiloto de aprendizaje. Puedo explicarte conceptos, ayudarte a leer un error y darte pistas sin revelarte la respuesta.\n\n¿En qué te atascaste hoy?',
   at: Date.now(),
-  source: 'CodeQuest',
+  source: 'CodeQuizz-AI',
 }
 
 function loadChat() {

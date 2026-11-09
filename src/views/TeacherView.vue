@@ -234,7 +234,7 @@ const filteredStudents = computed(() => {
       <span class="setup-icon"><AppIcon name="cloud" :size="26" /></span>
       <h2>Conecta Supabase para usar el panel docente</h2>
       <p>
-        El panel necesita cuentas y una base de datos. CodeQuest ya funciona en modo local; para
+        El panel necesita cuentas y una base de datos. CodeQuizz-AI ya funciona en modo local; para
         activar el seguimiento de estudiantes:
       </p>
       <ol class="setup-steps">

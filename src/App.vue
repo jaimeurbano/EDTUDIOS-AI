@@ -71,7 +71,7 @@ watch(
 watch(
   () => route.meta.title,
   (title) => {
-    document.title = title ? `${title} · CodeQuest` : 'CodeQuest · Aprende programando'
+    document.title = title ? `${title} · CodeQuizz-AI` : 'CodeQuizz-AI · Aprende programando'
   },
   { immediate: true },
 )

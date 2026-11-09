@@ -212,7 +212,7 @@ function exportData() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `codequest-respaldo-${new Date().toISOString().slice(0, 10)}.json`
+    link.download = `codequizz-ai-respaldo-${new Date().toISOString().slice(0, 10)}.json`
     document.body.appendChild(link)
     link.click()
     link.remove()
@@ -236,7 +236,7 @@ async function handleImport(event) {
     importProgress(raw)
     showNotice('success', 'Progreso importado correctamente. Tus datos se actualizaron.')
   } catch (error) {
-    showNotice('error', error.message || 'El archivo no es un respaldo válido de CodeQuest.')
+    showNotice('error', error.message || 'El archivo no es un respaldo válido de CodeQuizz-AI.')
   }
 }
 
@@ -343,7 +343,7 @@ onBeforeUnmount(() => {
     <header class="page-head animate-in">
       <div>
         <span class="eyebrow">Ajustes</span>
-        <h1>Haz CodeQuest <span class="gradient-text">a tu medida</span></h1>
+        <h1>Haz CodeQuizz-AI <span class="gradient-text">a tu medida</span></h1>
         <p v-if="cloudConfigured">
           Tu perfil, tu ritmo y tu mentor, sincronizados en la nube para que continúes en
           cualquier dispositivo.
@@ -519,7 +519,7 @@ onBeforeUnmount(() => {
             <span class="settings-icon"><AppIcon name="user" :size="20" /></span>
             <div>
               <h2>Perfil y ritmo</h2>
-              <p>Así te saluda CodeQuest y cuánto quieres practicar cada día.</p>
+              <p>Así te saluda CodeQuizz-AI y cuánto quieres practicar cada día.</p>
             </div>
           </div>
 
@@ -730,7 +730,7 @@ onBeforeUnmount(() => {
                       placeholder="https://api.openai.com/v1"
                       spellcheck="false"
                     />
-                    <span class="help">CodeQuest añadirá <code>/chat/completions</code>.</span>
+                    <span class="help">CodeQuizz-AI añadirá <code>/chat/completions</code>.</span>
                   </div>
 
                   <div class="field">
@@ -770,7 +770,7 @@ onBeforeUnmount(() => {
                   </div>
                   <span class="help">
                     La clave se guarda solo en <code>localStorage</code> de este navegador y viaja
-                    directamente al proveedor. Nunca pasa por un servidor de CodeQuest.
+                    directamente al proveedor. Nunca pasa por un servidor de CodeQuizz-AI.
                   </span>
                 </div>
 
@@ -952,7 +952,7 @@ onBeforeUnmount(() => {
               </li>
               <li>
                 <AppIcon name="check" :size="14" />
-                <span>No hay cuentas, cookies de seguimiento ni servidor de CodeQuest.</span>
+                <span>No hay cuentas, cookies de seguimiento ni servidor de CodeQuizz-AI.</span>
               </li>
               <li>
                 <AppIcon name="check" :size="14" />

@@ -1,4 +1,4 @@
-// Banco de preguntas de CodeQuest.
+// Banco de preguntas de CodeQuizz-AI.
 // Cada pregunta tiene un nivel de dificultad (1-5) y un concepto,
 // datos que alimentan al motor adaptativo.
 

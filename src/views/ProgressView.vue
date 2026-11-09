@@ -58,8 +58,8 @@ function askAboutProgress() {
   const focus = nextFocus.value
   askMentor(
     focus
-      ? `Estoy en el nivel ${levelInfo.value.level} de CodeQuest. Mi concepto más débil es "${focus.label}" (${focus.topicName}) con ${Math.round(focus.mastery * 100)}% de dominio. Diseña un plan de estudio de 3 pasos para mejorarlo esta semana.`
-      : 'Estoy empezando en CodeQuest. ¿Qué plan de estudio me recomiendas para aprender JavaScript, Vue y CSS en 4 semanas?',
+      ? `Estoy en el nivel ${levelInfo.value.level} de CodeQuizz-AI. Mi concepto más débil es "${focus.label}" (${focus.topicName}) con ${Math.round(focus.mastery * 100)}% de dominio. Diseña un plan de estudio de 3 pasos para mejorarlo esta semana.`
+      : 'Estoy empezando en CodeQuizz-AI. ¿Qué plan de estudio me recomiendas para aprender JavaScript, Vue y CSS en 4 semanas?',
   )
 }
 </script>

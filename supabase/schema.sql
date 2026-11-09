@@ -1,5 +1,5 @@
 -- =====================================================================
--- CodeQuest · Esquema de Supabase (Postgres + Auth + RLS)
+-- CodeQuizz-AI · Esquema de Supabase (Postgres + Auth + RLS)
 -- ---------------------------------------------------------------------
 -- Ejecuta este archivo completo en Supabase → SQL Editor.
 -- Es idempotente: puedes volver a ejecutarlo sin borrar datos.
