@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { isSupabaseConfigured } from '../lib/supabase'
-import { auth, isTeacher } from '../stores/useAuth'
+import { accountChoiceMade, auth, isTeacher } from '../stores/useAuth'
 
 const routes = [
   {
@@ -86,6 +86,13 @@ router.beforeEach((to) => {
   // Usamos la sesión, no auth.user: un registro pendiente de confirmar
   // crea un usuario pero no una sesión válida.
   const signedIn = Boolean(auth.session)
+
+  if (signedIn && !accountChoiceMade.value) {
+    if (to.name === 'login') return true
+    const query = { choose: '1' }
+    if (to.fullPath !== '/') query.redirect = to.fullPath
+    return { name: 'login', query }
+  }
 
   if (to.meta.requiresTeacher && !isTeacher.value) {
     return signedIn ? { name: 'home' } : { name: 'login', query: { redirect: to.fullPath } }

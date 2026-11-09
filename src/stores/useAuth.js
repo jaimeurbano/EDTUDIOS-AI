@@ -1,5 +1,15 @@
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+
+const ACCOUNT_CHOICE_KEY = 'codequizz.accountChoice'
+
+function readAccountChoice() {
+  try {
+    return sessionStorage.getItem(ACCOUNT_CHOICE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 
 export const auth = reactive({
   ready: !isSupabaseConfigured,
@@ -13,6 +23,25 @@ export const auth = reactive({
 export const isAuthenticated = computed(() => Boolean(auth.session?.user))
 export const isTeacher = computed(() => auth.profile?.role === 'teacher')
 export const isStudent = computed(() => auth.profile?.role === 'student')
+export const accountChoiceMade = ref(readAccountChoice())
+
+export function confirmAccountChoice() {
+  accountChoiceMade.value = true
+  try {
+    sessionStorage.setItem(ACCOUNT_CHOICE_KEY, '1')
+  } catch {
+    /* The current app session can still continue without session storage. */
+  }
+}
+
+function resetAccountChoice() {
+  accountChoiceMade.value = false
+  try {
+    sessionStorage.removeItem(ACCOUNT_CHOICE_KEY)
+  } catch {
+    /* The next app session will ask again if session storage is unavailable. */
+  }
+}
 
 export const accountName = computed(() => {
   const profileName = auth.profile?.full_name?.trim()
@@ -170,6 +199,7 @@ export async function signOut() {
   try {
     await supabase.auth.signOut()
   } finally {
+    resetAccountChoice()
     auth.loading = false
     auth.session = null
     auth.user = null

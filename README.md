@@ -36,8 +36,8 @@ El motor de práctica ajusta la dificultad pregunta a pregunta, evita repetir ej
 | Rutas | Vue Router 4 (hash history) |
 | Estado | Stores reactivos propios (`reactive` + `computed`) |
 | Estilos | CSS puro con variables y `scoped styles` |
-| Persistencia local | `localStorage` |
-| Backend opcional | Supabase (Postgres + Auth + RLS) |
+| Caché local | `localStorage` |
+| Cuentas y persistencia en la nube (opcional) | Supabase (Postgres + Auth + RLS) |
 | IA | Base local + API compatible con OpenAI (opcional) |
 
 Sin Pinia, sin framework CSS y sin dependencias de UI. El modo local sigue funcionando aunque no configures Supabase.
@@ -73,6 +73,7 @@ Si no existe `.env.local` o faltan `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY
 
 - No hay pantalla de login.
 - El progreso se guarda en `localStorage`.
+- Los datos permanecen solo en ese navegador y dispositivo; no se suben a Cloudflare ni se comparten entre usuarios.
 - El panel docente muestra las instrucciones de configuración.
 
 ### Modo nube (recomendado para clases)
@@ -131,7 +132,18 @@ VITE_SUPABASE_ANON_KEY=tu-clave-anonima
 
 > ⚠️ **Nunca** pongas la clave `service_role` en el frontend ni en `.env.local`. Esa clave omite RLS. La clave `anon` es pública y está protegida por las políticas del esquema.
 
-### 5. Promover una cuenta a docente
+### 5. Variables de entorno en Cloudflare Pages
+
+Cloudflare Pages publica la aplicación, pero no es la base de datos de los usuarios. El proyecto guarda cuentas y progreso en Supabase.
+
+1. En Cloudflare, abre el proyecto de Pages y ve a **Settings → Environment variables**.
+2. Añade `VITE_SUPABASE_URL` con la URL del proyecto Supabase y `VITE_SUPABASE_ANON_KEY` con su clave `anon` pública, al menos para **Production** (y **Preview** si se usa).
+3. Vuelve a desplegar la aplicación para que Vite incorpore esas variables al build.
+4. En Supabase, configura **Authentication → URL Configuration** con el dominio publicado y ejecuta [`supabase/schema.sql`](supabase/schema.sql) si aún no lo hiciste.
+
+Cuando una sesión anterior esté activa, al abrir la aplicación se ofrecerá continuar con esa cuenta, crear un usuario nuevo o usar otra cuenta. Cada cuenta conserva su propio progreso en Supabase. Crear una cuenta nueva no borra el progreso anterior.
+
+### 6. Promover una cuenta a docente
 
 El rol **nunca** se acepta desde el registro. Después de que la persona cree su cuenta, ejecuta en el **SQL Editor**:
 
@@ -143,7 +155,7 @@ where email = 'docente@correo.com';
 
 Luego pide que cierre y vuelva a iniciar sesión para que la app reciba el rol actualizado.
 
-### 6. Flujo de una clase
+### 7. Flujo de una clase
 
 1. El docente entra a **Panel docente** y crea una clase (por ejemplo `8°B`).
 2. La app genera un código de 6 caracteres, por ejemplo `A1B2C3`.
@@ -151,7 +163,7 @@ Luego pide que cierre y vuelva a iniciar sesión para que la app reciba el rol a
 4. Cada estudiante inicia sesión, va a **Ajustes → Cuenta y sincronización**, escribe el código y pulsa **Unirme**.
 5. El progreso se sincroniza automáticamente. El docente puede refrescar el panel y ver XP, precisión, racha, última actividad y desglose por tema.
 
-### 7. Seguridad y RLS
+### 8. Seguridad y RLS
 
 - `profiles`: cada usuario ve su perfil; un docente ve los perfiles de estudiantes de sus clases.
 - `student_progress`: solo el estudiante dueño o su docente pueden leerlo.
@@ -162,7 +174,7 @@ Luego pide que cierre y vuelva a iniciar sesión para que la app reciba el rol a
 - La sincronización aplica **last-write-wins** y elimina `ai.apiKey` antes de subir el progreso.
 - Al cerrar sesión se limpian progreso, chat, laboratorio y preferencias locales de ese dispositivo.
 
-### 8. Despliegue
+### 9. Despliegue
 
 1. Compila con `npm run build`.
 2. Sube `dist/` a Netlify, Vercel, Cloudflare Pages o cualquier hosting estático.

@@ -4,13 +4,24 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import BrandMark from '../components/BrandMark.vue'
 import { isSupabaseConfigured } from '../lib/supabase'
-import { signIn, signUp } from '../stores/useAuth'
+import {
+  accountChoiceMade,
+  accountName,
+  auth,
+  confirmAccountChoice,
+  signIn,
+  signOut,
+  signUp,
+} from '../stores/useAuth'
 import { updateProfile } from '../stores/useProgress'
 
 const route = useRoute()
 const router = useRouter()
 
 const configured = isSupabaseConfigured
+const choosingAccount = computed(
+  () => configured && Boolean(auth.session) && !accountChoiceMade.value,
+)
 const mode = ref(route.name === 'register' ? 'register' : 'login')
 const form = reactive({ fullName: '', email: '', password: '', confirm: '' })
 const error = ref('')
@@ -30,6 +41,36 @@ const redirectTarget = computed(() => {
   const target = route.query.redirect
   return typeof target === 'string' && target.startsWith('/') ? target : '/'
 })
+
+async function continueAsCurrentUser() {
+  confirmAccountChoice()
+  await router.push(redirectTarget.value)
+}
+
+async function startNewUser() {
+  await switchAccount('register')
+}
+
+async function useAnotherAccount() {
+  await switchAccount('login')
+}
+
+async function switchAccount(nextMode) {
+  if (submitting.value) return
+  error.value = ''
+  submitting.value = true
+  try {
+    await signOut()
+    await router.replace({
+      name: nextMode,
+      query: route.query.redirect ? { redirect: route.query.redirect } : {},
+    })
+  } catch (err) {
+    error.value = err.message || 'No se pudo cerrar la sesión actual.'
+  } finally {
+    submitting.value = false
+  }
+}
 
 watch(
   () => route.name,
@@ -86,9 +127,11 @@ async function submit() {
         await router.push({ name: 'login', query: { confirm: '1' } })
         return
       }
+      confirmAccountChoice()
       await router.push(redirectTarget.value)
     } else {
       await signIn(form.email, form.password)
+      confirmAccountChoice()
       await router.push(redirectTarget.value)
     }
   } catch (err) {
@@ -162,9 +205,9 @@ async function submit() {
             <span class="eyebrow">Modo local</span>
             <h2>Backend sin configurar</h2>
             <p>
-              CodeQuizz-AI funciona ahora mismo sin cuentas: tu progreso se guarda en este
-              navegador. Para activar el inicio de sesión y el panel docente, conecta Supabase
-              (plan gratuito).
+              Esta versión todavía no está conectada a la nube: el progreso se guarda solo en
+              este navegador. Para usar cuentas y sincronizar datos, configura Supabase y añade
+              sus variables de entorno en la configuración de compilación de Cloudflare Pages.
             </p>
           </header>
 
@@ -181,13 +224,62 @@ async function submit() {
               Copia <code>.env.example</code> a <code>.env.local</code> y pega la
               <strong>Project URL</strong> y la <strong>anon key</strong>.
             </li>
+            <li>
+              En Cloudflare Pages configura <code>VITE_SUPABASE_URL</code> y
+              <code>VITE_SUPABASE_ANON_KEY</code> como variables de compilación y vuelve a
+              desplegar.
+            </li>
             <li>Reinicia el servidor con <code>npm run dev -- --host</code>.</li>
           </ol>
 
           <RouterLink to="/" class="btn btn-primary btn-lg btn-block">
             <AppIcon name="chevron-right" :size="17" />
-            Explorar CodeQuizz-AI en modo local
+            Explorar CodeQuizz-AI sin sincronización en la nube
           </RouterLink>
+        </template>
+
+        <template v-else-if="choosingAccount">
+          <header class="auth-head">
+            <span class="eyebrow">Sesión anterior</span>
+            <h2>¿Cómo quieres entrar?</h2>
+            <p>
+              Tu progreso está guardado en la nube. Puedes continuar con esta cuenta o crear
+              una cuenta nueva con su propio progreso.
+            </p>
+          </header>
+
+          <div v-if="error" class="auth-alert error" role="alert">
+            <AppIcon name="alert" :size="16" />
+            {{ error }}
+          </div>
+
+          <div class="auth-form">
+            <button
+              type="button"
+              class="btn btn-primary btn-lg btn-block"
+              :disabled="submitting"
+              @click="continueAsCurrentUser"
+            >
+              Continuar como {{ accountName }}
+              <AppIcon name="arrow-right" :size="18" />
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline btn-lg btn-block"
+              :disabled="submitting"
+              @click="startNewUser"
+            >
+              Soy un usuario nuevo
+            </button>
+            <button
+              type="button"
+              class="link-button"
+              :disabled="submitting"
+              @click="useAnotherAccount"
+            >
+              Usar otra cuenta existente
+            </button>
+          </div>
         </template>
 
         <template v-else>
